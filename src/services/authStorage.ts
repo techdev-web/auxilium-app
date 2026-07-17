@@ -25,3 +25,46 @@ export async function getAccessToken(): Promise<string | null> {
 export async function clearAccessToken(): Promise<void> {
   await Keychain.resetGenericPassword({ service: AUTH_SERVICE });
 }
+
+function decodeJwtPayload(token: string): { exp?: number } | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) {
+      return null;
+    }
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      '=',
+    );
+    const json = globalThis.atob(padded);
+    return JSON.parse(json) as { exp?: number };
+  } catch {
+    return null;
+  }
+}
+
+export function isAccessTokenExpired(token: string): boolean {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) {
+    return true;
+  }
+
+  return payload.exp * 1000 <= Date.now();
+}
+
+export async function resolveAuthDestination(): Promise<'Login' | 'MainTabs'> {
+  const token = await getAccessToken();
+
+  if (!token) {
+    return 'Login';
+  }
+
+  if (isAccessTokenExpired(token)) {
+    await clearAccessToken();
+    return 'Login';
+  }
+
+  return 'MainTabs';
+}

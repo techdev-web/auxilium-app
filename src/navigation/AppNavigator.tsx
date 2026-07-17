@@ -3,10 +3,11 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUnistyles } from 'react-native-unistyles';
 import type { RootStackParamList } from './types';
+import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import OtpScreen from '../screens/OtpScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
-import HomeScreen from '../screens/HomeScreen';
+import MainTabs from './MainTabs';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -29,16 +30,21 @@ export default function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="Splash"
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
+          animation: 'fade',
           contentStyle: { backgroundColor: theme.colors.background },
         }}>
+        <Stack.Screen
+          name="Splash"
+          component={SplashScreen}
+          options={{ animation: 'fade' }}
+        />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Otp" component={OtpScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="MainTabs" component={MainTabs} />
       </Stack.Navigator>
     </NavigationContainer>
   );

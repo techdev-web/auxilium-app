@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }: Props) {
         });
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Home' }],
+          routes: [{ name: 'MainTabs' }],
         });
       }
     } catch (error) {

@@ -1,6 +1,15 @@
 export type RootStackParamList = {
+  Splash: undefined;
   Login: undefined;
   Otp: undefined;
   ForgotPassword: undefined;
-  Home: undefined;
+  MainTabs: undefined;
+};
+
+export type MainTabParamList = {
+  Dashboard: undefined;
+  Listings: undefined;
+  Profile: undefined;
+  Owners: undefined;
+  Transactions: undefined;
 };

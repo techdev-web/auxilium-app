@@ -1,16 +1,17 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = {
+  title: string;
+  subtitle?: string;
+};
 
-export default function HomeScreen(_props: Props) {
+export default function PlaceholderScreen({ title, subtitle }: Props) {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Home</Text>
-      <Text style={styles.subtitle}>You are signed in</Text>
+      <Text style={styles.title}>{title}</Text>
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -33,5 +34,6 @@ const styles = StyleSheet.create(theme => ({
     fontSize: 16,
     lineHeight: 24,
     color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
 }));
