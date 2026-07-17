@@ -32,7 +32,7 @@ export default function AppNavigator() {
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          contentStyle: { backgroundColor: theme.colors.header },
+          contentStyle: { backgroundColor: theme.colors.background },
         }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Otp" component={OtpScreen} />

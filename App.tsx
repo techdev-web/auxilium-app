@@ -7,12 +7,19 @@
 
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useUnistyles } from 'react-native-unistyles';
 import AppNavigator from './src/navigation/AppNavigator';
 
 function App() {
+  const { rt } = useUnistyles();
+
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle={rt.colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        translucent
+        backgroundColor="transparent"
+      />
       <AppNavigator />
     </SafeAreaProvider>
   );

@@ -1,75 +1,87 @@
 import React, { type ReactNode } from 'react';
 import {
+  Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-unistyles';
+import bg from '../assets/bg4.png';
+import logo from '../assets/logo.png';
 
 type Props = {
   children: ReactNode;
+  footer?: ReactNode;
 };
 
-export default function AuthShell({ children }: Props) {
+export default function AuthShell({ children, footer }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 24 }]}>
-        <Text style={styles.brand}>Auxilium</Text>
-      </View>
-
+    <ImageBackground source={bg} style={styles.root} resizeMode="cover">
+      <View style={styles.overlay} pointerEvents="none" />
       <KeyboardAvoidingView
-        style={styles.cardWrapper}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.card, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            bounces={false}>
-            {children}
-          </ScrollView>
-        </View>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: insets.top + 16,
+              paddingBottom: Math.max(insets.bottom, 24) + 16,
+              paddingLeft: Math.max(insets.left, 28),
+              paddingRight: Math.max(insets.right, 28),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}>
+          <View style={styles.logoWrap}>
+            <Image source={logo} style={styles.logo} resizeMode="contain" />
+          </View>
+          <View style={styles.content}>{children}</View>
+          {footer ? <View style={styles.footer}>{footer}</View> : null}
+        </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create(theme => ({
   root: {
     flex: 1,
-    backgroundColor: theme.colors.header,
+    backgroundColor: theme.colors.background,
   },
-  header: {
-    paddingHorizontal: theme.gap(3),
-    paddingBottom: theme.gap(5),
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    minHeight: 160,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: theme.colors.overlay,
   },
-  brand: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: theme.colors.textOnHeader,
-    letterSpacing: 0.3,
-  },
-  cardWrapper: {
+  flex: {
     flex: 1,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: theme.colors.card,
-    borderTopLeftRadius: theme.radii.card,
-    borderTopRightRadius: theme.radii.card,
-    paddingTop: theme.gap(4),
-    paddingHorizontal: theme.gap(3),
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: theme.gap(2),
+  },
+  logoWrap: {
+    alignItems: 'center',
+    marginBottom: theme.gap(3),
+  },
+  logo: {
+    width: 220,
+    height: 72,
+  },
+  content: {
+    flexGrow: 1,
+    width: '100%',
+  },
+  footer: {
+    marginTop: 'auto',
+    paddingTop: theme.gap(4),
+    alignItems: 'center',
+    width: '100%',
   },
 }));

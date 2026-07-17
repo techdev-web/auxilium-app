@@ -4,5 +4,6 @@ export const brandColors = {
   secondary: '#3D9970',
   tertiary: '#FFDC00',
   black: '#000000',
+  gray: '#808080',
   white: '#FFFFFF',
 } as const;
