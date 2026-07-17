@@ -6,16 +6,26 @@ import {
   View,
   type TextInput as TextInputType,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import AuthShell from '../components/AuthShell';
 import CircleActionButton from '../components/CircleActionButton';
 import { UniTextInput } from '../components/UniTextInput';
+import { requestOtp, signInWithOtp } from '../constants/urls';
+import { saveAccessToken } from '../services/authStorage';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Otp'>;
+
+function buildIdentifierPayload(phoneOrEmail: string) {
+  const identifier = phoneOrEmail.trim();
+  return identifier.includes('@')
+    ? { email: identifier, purpose: 'login' }
+    : { phone: identifier };
+}
 
 export default function OtpScreen({ navigation }: Props) {
   const { theme } = useUnistyles();
@@ -25,14 +35,57 @@ export default function OtpScreen({ navigation }: Props) {
   );
   const inputRefs = useRef<Array<TextInputType | null>>([]);
 
-  const handleVerifyOtp = () => {
-    // TODO: wire up OTP verification
+  const handleVerifyOtp = async () => {
     const otp = otpDigits.join('');
-    console.log({ phoneOrEmail, otp });
+    try {
+      const response = await fetch(signInWithOtp, {
+        method: 'POST',
+        body: JSON.stringify({ ...buildIdentifierPayload(phoneOrEmail), otp }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok && data.access_token) {
+        await saveAccessToken(data.access_token);
+        Toast.show({
+          type: 'success',
+          text1: 'Login successful',
+        });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const handleSendOtp = () => {
-    // TODO: wire up OTP send
+  const handleSendOtp = async () => {
+    try {
+      const response = await fetch(requestOtp, {
+        method: 'POST',
+        body: JSON.stringify(buildIdentifierPayload(phoneOrEmail)),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok) {
+        Toast.show({
+          type: 'success',
+          text1: 'OTP sent',
+          text2: 'OTP is sent to the registered email',
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const handleOtpChange = (value: string, index: number) => {

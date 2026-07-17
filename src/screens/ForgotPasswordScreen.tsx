@@ -1,19 +1,42 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { StyleSheet } from 'react-native-unistyles';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import AuthShell from '../components/AuthShell';
 import CircleActionButton from '../components/CircleActionButton';
 import { UniTextInput } from '../components/UniTextInput';
+import { resetPassword } from '../constants/urls';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
 export default function ForgotPasswordScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
 
-  const handleResetPassword = () => {
-    // TODO: wire up password reset
+  const handleResetPassword = async () => {
+    try {
+      const response = await fetch(resetPassword, {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok) {
+        Toast.show({
+          type: 'success',
+          text1: 'Password reset email sent',
+          text2: 'Email with password is sent to the registered email',
+        });
+        navigation.navigate('Login');
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (

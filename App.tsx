@@ -7,6 +7,7 @@
 
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { useUnistyles } from 'react-native-unistyles';
 import AppNavigator from './src/navigation/AppNavigator';
 
@@ -21,6 +22,7 @@ function App() {
         backgroundColor="transparent"
       />
       <AppNavigator />
+      <Toast />
     </SafeAreaProvider>
   );
 }

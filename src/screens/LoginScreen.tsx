@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { StyleSheet } from 'react-native-unistyles';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import AuthShell from '../components/AuthShell';
 import CircleActionButton from '../components/CircleActionButton';
 import { UniTextInput } from '../components/UniTextInput';
-import { loginUrl } from '../constants/urls';
+import { login } from '../constants/urls';
+import { saveAccessToken } from '../services/authStorage';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -17,15 +19,27 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleSignIn = async () => {
     try {
-      const response = await fetch(loginUrl, {
+      const response = await fetch(login, {
         method: 'POST',
         body: JSON.stringify({ email, password }),
-        headers:{
+        headers: {
           'Content-Type': 'application/json',
-        }
+        },
       });
       const data = await response.json();
       console.log(data);
+
+      if (response.ok && data.access_token) {
+        await saveAccessToken(data.access_token);
+        Toast.show({
+          type: 'success',
+          text1: 'Login successful',
+        });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
     } catch (error) {
       console.log(error);
     }
