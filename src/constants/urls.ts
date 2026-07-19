@@ -10,3 +10,7 @@ export const changePassword = `${BASE_URL}/auth/change-password`;
 
 //Profile
 export const profileDetails = `${BASE_URL}/users/me/profile`;
+
+
+//listings
+export const listings = `${BASE_URL}/listings`;
