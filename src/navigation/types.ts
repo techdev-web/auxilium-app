@@ -4,6 +4,7 @@ export type RootStackParamList = {
   Otp: undefined;
   ForgotPassword: undefined;
   MainTabs: undefined;
+  ChangePassword: undefined;
 };
 
 export type MainTabParamList = {

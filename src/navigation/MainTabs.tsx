@@ -47,10 +47,10 @@ export default function MainTabs() {
         ),
       })}>
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Listings" component={ListingsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
-      <Tab.Screen name="Owners" component={OwnersScreen} />
-      <Tab.Screen name="Transactions" component={TransactionsScreen} />
+      <Tab.Screen name="Listings" component={ListingsScreen} />
+      {/* <Tab.Screen name="Owners" component={OwnersScreen} /> */}
+      {/* <Tab.Screen name="Transactions" component={TransactionsScreen} /> */}
     </Tab.Navigator>
   );
 }

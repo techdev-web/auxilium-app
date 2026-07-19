@@ -6,3 +6,7 @@ export const login = `${BASE_URL}/auth/login`;
 export const resetPassword = `${BASE_URL}/auth/reset-password`;
 export const requestOtp = `${BASE_URL}/auth/request-otp`;
 export const signInWithOtp = `${BASE_URL}/auth/otp-login`;
+export const changePassword = `${BASE_URL}/auth/change-password`;
+
+//Profile
+export const profileDetails = `${BASE_URL}/users/me/profile`;
