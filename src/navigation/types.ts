@@ -16,11 +16,19 @@ export type ListingsStackParamList = {
   ImportFromGis: undefined;
 };
 
+export type LandGISStackParamList = {
+  LandGISHome: undefined;
+  ProjectMapWorkspace: {
+    projectId: string;
+    projectTitle: string;
+  };
+};
+
 export type MainTabParamList = {
   Dashboard: undefined;
   Listings: NavigatorScreenParams<ListingsStackParamList> | undefined;
   Profile: undefined;
   Owners: undefined;
   Transactions: undefined;
-  LandGIS: undefined;
+  LandGIS: NavigatorScreenParams<LandGISStackParamList> | undefined;
 };

@@ -14,3 +14,15 @@ export const profileDetails = `${BASE_URL}/users/me/profile`;
 
 //listings
 export const listings = `${BASE_URL}/listings`;
+
+//projects (local for now; wire to backend later)
+export const projects = `${BASE_URL}/projects`;
+export const projectById = (id: string) => `${BASE_URL}/projects/${id}`;
+
+//location apis
+export const states = `${BASE_URL}/states`;
+export const stateDistricts = (stateId: number) =>
+  `${BASE_URL}/states/${stateId}/districts`;
+export const subDistrictsSearch = `${BASE_URL}/sub-districts/search`;
+export const villagesSearch = `${BASE_URL}/villages/search`;
+

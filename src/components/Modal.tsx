@@ -8,6 +8,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { StyleSheet } from 'react-native-unistyles';
 
 type Props = {
@@ -42,6 +43,8 @@ export default function Modal({
           accessibilityLabel="Close modal"
         />
         <View style={[styles.card, contentStyle]}>{children}</View>
+        {/* Same native window as the modal so toasts aren't hidden behind it */}
+        <Toast />
       </KeyboardAvoidingView>
     </RNModal>
   );

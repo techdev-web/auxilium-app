@@ -7,7 +7,7 @@ import type { MainTabParamList } from './types';
 import DashboardScreen from '../screens/DashboardScreen';
 import ListingsStack from './ListingsStack';
 import ProfileScreen from '../screens/ProfileScreen';
-import LandGISScreen from '../screens/LandGISScreen';
+import LandGISStack from './LandGISStack';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -49,7 +49,7 @@ export default function MainTabs() {
       })}>
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen name="Listings" component={ListingsStack} />
-      <Tab.Screen name="LandGIS" component={LandGISScreen} options={{title: 'GIS'}} />
+      <Tab.Screen name="LandGIS" component={LandGISStack} options={{ title: 'GIS' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       {/* <Tab.Screen name="Owners" component={OwnersScreen} /> */}
       {/* <Tab.Screen name="Transactions" component={TransactionsScreen} /> */}
