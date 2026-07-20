@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -7,10 +9,18 @@ export type RootStackParamList = {
   ChangePassword: undefined;
 };
 
+export type ListingsStackParamList = {
+  ManageListings: undefined;
+  ViewListings: undefined;
+  CreateListing: undefined;
+  ImportFromGis: undefined;
+};
+
 export type MainTabParamList = {
   Dashboard: undefined;
-  Listings: undefined;
+  Listings: NavigatorScreenParams<ListingsStackParamList> | undefined;
   Profile: undefined;
   Owners: undefined;
   Transactions: undefined;
+  LandGIS: undefined;
 };

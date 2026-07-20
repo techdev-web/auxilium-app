@@ -15,16 +15,23 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import type { MainTabParamList, RootStackParamList } from '../navigation/types';
+import type {
+  ListingsStackParamList,
+  MainTabParamList,
+  RootStackParamList,
+} from '../navigation/types';
 import { listings as listingsUrl } from '../constants/urls';
 import { authFetch } from '../services/api';
 import type { Listing, ListingsResponse } from '../types/listing';
 
 const PAGE_SIZE = 20;
 
-type ListingsNavigation = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, 'Listings'>,
-  NativeStackNavigationProp<RootStackParamList>
+type ViewListingsNavigation = CompositeNavigationProp<
+  NativeStackNavigationProp<ListingsStackParamList, 'ViewListings'>,
+  CompositeNavigationProp<
+    BottomTabNavigationProp<MainTabParamList>,
+    NativeStackNavigationProp<RootStackParamList>
+  >
 >;
 
 function titleCase(value: string) {
@@ -130,8 +137,8 @@ function ListingCard({ listing }: ListingCardProps) {
   );
 }
 
-export default function ListingsScreen() {
-  const navigation = useNavigation<ListingsNavigation>();
+export default function ViewListingsScreen() {
+  const navigation = useNavigation<ViewListingsNavigation>();
   const insets = useSafeAreaInsets();
   const { theme } = useUnistyles();
 
@@ -150,7 +157,7 @@ export default function ListingsScreen() {
 
   const resetToLogin = useCallback(() => {
     const rootNavigation =
-      navigation.getParent<NativeStackNavigationProp<RootStackParamList>>();
+      navigation.getParent()?.getParent<NativeStackNavigationProp<RootStackParamList>>();
     rootNavigation?.reset({
       index: 0,
       routes: [{ name: 'Login' }],
@@ -270,7 +277,16 @@ export default function ListingsScreen() {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 16 }]}>
+    <View style={[styles.root, { paddingTop: insets.top + 12 }]}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        hitSlop={8}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel="Go back">
+        <Text style={styles.backText}>‹ Back</Text>
+      </Pressable>
+
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Listings</Text>
         {!isLoading && !error ? (
@@ -346,6 +362,15 @@ const styles = StyleSheet.create(theme => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  backButton: {
+    paddingHorizontal: theme.gap(3),
+    marginBottom: theme.gap(1),
+  },
+  backText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: theme.colors.primary,
   },
   header: {
     flexDirection: 'row',
@@ -516,11 +541,6 @@ const styles = StyleSheet.create(theme => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.gap(1),
-  },
-  negotiable: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.primary,
   },
   stateCard: {
     marginTop: theme.gap(4),
