@@ -1,3 +1,5 @@
+import type { MapGeometry, MapImageOverlay } from './mapGeometry';
+
 export type CreateProjectInput = {
   title: string;
   listingCenter: string;
@@ -12,8 +14,15 @@ export type CreateProjectInput = {
   villageName: string | null;
 };
 
+export type UpdateProjectInput = CreateProjectInput & {
+  geometries?: MapGeometry[];
+  imageOverlays?: MapImageOverlay[];
+};
+
 export type Project = CreateProjectInput & {
   id: string;
   createdAt: string;
   updatedAt: string;
+  geometries?: MapGeometry[];
+  imageOverlays?: MapImageOverlay[];
 };

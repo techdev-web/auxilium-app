@@ -43,8 +43,10 @@ export default function Modal({
           accessibilityLabel="Close modal"
         />
         <View style={[styles.card, contentStyle]}>{children}</View>
-        {/* Same native window as the modal so toasts aren't hidden behind it */}
-        <Toast />
+        {/* Same native window as the modal; zIndex above the card so toasts aren't covered */}
+        <View style={styles.toastLayer} pointerEvents="box-none">
+          <Toast />
+        </View>
       </KeyboardAvoidingView>
     </RNModal>
   );
@@ -70,5 +72,14 @@ const styles = StyleSheet.create(theme => ({
     padding: theme.gap(3),
     gap: theme.gap(2),
     zIndex: 1,
+  },
+  toastLayer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 2,
+    elevation: 2,
   },
 }));

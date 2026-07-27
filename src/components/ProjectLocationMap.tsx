@@ -35,12 +35,18 @@ export default function ProjectLocationMap({
         touchRotate={false}
         touchPitch={false}>
         <Camera initialViewState={{ center: [longitude, latitude], zoom }} />
-        <Marker id="project-pin" lngLat={[longitude, latitude]} anchor="bottom">
-          <MapPin
-            size={28}
-            color={theme.colors.primary}
-            fill={theme.colors.primary}
-          />
+        <Marker
+          id="project-pin"
+          lngLat={[longitude, latitude]}
+          anchor="bottom"
+          style={styles.pinAnnotation}>
+          <View collapsable={false} style={styles.pinWrap}>
+            <MapPin
+              size={28}
+              color={theme.colors.primary}
+              fill={theme.colors.primary}
+            />
+          </View>
         </Marker>
       </Map>
     </View>
@@ -56,5 +62,16 @@ const styles = StyleSheet.create(theme => ({
   },
   map: {
     flex: 1,
+  },
+  pinAnnotation: {
+    width: 36,
+    height: 36,
+  },
+  pinWrap: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
 }));

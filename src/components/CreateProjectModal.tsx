@@ -86,13 +86,13 @@ export default function CreateProjectModal({
   const [subDistricts, setSubDistricts] = useState<SubDistrict[]>([]);
   const [villages, setVillages] = useState<Village[]>([]);
 
-  const [selectedState, setSelectedState] = useState<State | null>(null);
+  const [selectedState, setSelectedState] = useState<State | null>({state_id: 0, state_name: 'State', is_active: true});
   const [selectedDistrict, setSelectedDistrict] = useState<District | null>(
-    null,
+    {district_id: 0, district_name: 'District', state_id: 0, is_active: true},
   );
   const [selectedSubDistrict, setSelectedSubDistrict] =
-    useState<SubDistrict | null>(null);
-  const [selectedVillage, setSelectedVillage] = useState<Village | null>(null);
+    useState<SubDistrict | null>({id: 0, name: 'Sub-district', district_id: 0});
+  const [selectedVillage, setSelectedVillage] = useState<Village | null>({id: 0, name: 'Village', sub_district_id: 0});
 
   const [loadingStates, setLoadingStates] = useState(false);
   const [loadingDistricts, setLoadingDistricts] = useState(false);

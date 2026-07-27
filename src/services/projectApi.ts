@@ -1,4 +1,9 @@
-import type { CreateProjectInput, Project } from '../types/project';
+import type {
+  CreateProjectInput,
+  Project,
+  UpdateProjectInput,
+} from '../types/project';
+import type { MapGeometry, MapImageOverlay } from '../types/mapGeometry';
 import { loadProjectsLocal, saveProjectsLocal } from './projectStorage';
 
 /**
@@ -19,6 +24,7 @@ export async function createProject(
     id: createId(),
     createdAt: now,
     updatedAt: now,
+    geometries: [],
   };
 
   const projects = await loadProjectsLocal();
@@ -29,7 +35,7 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  input: CreateProjectInput,
+  input: UpdateProjectInput,
 ): Promise<Project> {
   const projects = await loadProjectsLocal();
   const index = projects.findIndex(p => p.id === id);
@@ -41,6 +47,36 @@ export async function updateProject(
     ...projects[index],
     ...input,
     id,
+    geometries:
+      input.geometries !== undefined
+        ? input.geometries
+        : projects[index].geometries,
+    imageOverlays:
+      input.imageOverlays !== undefined
+        ? input.imageOverlays
+        : projects[index].imageOverlays,
+    updatedAt: new Date().toISOString(),
+  };
+  projects[index] = updated;
+  await saveProjectsLocal(projects);
+  return updated;
+}
+
+export async function updateProjectGeometries(
+  id: string,
+  geometries: MapGeometry[],
+  imageOverlays?: MapImageOverlay[],
+): Promise<Project> {
+  const projects = await loadProjectsLocal();
+  const index = projects.findIndex(p => p.id === id);
+  if (index < 0) {
+    throw new Error('Project not found');
+  }
+
+  const updated: Project = {
+    ...projects[index],
+    geometries,
+    imageOverlays: imageOverlays ?? projects[index].imageOverlays ?? [],
     updatedAt: new Date().toISOString(),
   };
   projects[index] = updated;

@@ -161,12 +161,15 @@ export default function MapCoordinatePicker({
                 <Marker
                   id="pick-pin"
                   lngLat={[selected.longitude, selected.latitude]}
-                  anchor="bottom">
-                  <MapPin
-                    size={36}
-                    color={theme.colors.primary}
-                    fill={theme.colors.primary}
-                  />
+                  anchor="bottom"
+                  style={styles.pinAnnotation}>
+                  <View collapsable={false} style={styles.pinWrap}>
+                    <MapPin
+                      size={36}
+                      color={theme.colors.primary}
+                      fill={theme.colors.primary}
+                    />
+                  </View>
                 </Marker>
               ) : null}
             </Map>
@@ -251,6 +254,17 @@ const styles = StyleSheet.create(theme => ({
   },
   map: {
     flex: 1,
+  },
+  pinAnnotation: {
+    width: 44,
+    height: 44,
+  },
+  pinWrap: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   zoomControls: {
     position: 'absolute',

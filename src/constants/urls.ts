@@ -1,4 +1,5 @@
-const BASE_URL = 'http://10.0.2.2:3000/api/v1';
+// const BASE_URL = 'http://10.0.2.2:3000/api/v1';
+const BASE_URL = 'https://api.auxilium-power.com/api/v1';
 
 export const login = `${BASE_URL}/auth/login`;
 // export const registerUrl = `${BASE_URL}/auth/register`;

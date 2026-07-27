@@ -45,6 +45,14 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const dummyLogin = async () => {
+    await saveAccessToken('dummy-token');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'MainTabs' }],
+    });
+  };
+
   return (
     <AuthShell
       footer={
@@ -105,7 +113,7 @@ export default function LoginScreen({ navigation }: Props) {
           <Text style={styles.forgotPasswordText}>Forgot your password?</Text>
         </Pressable>
 
-        <CircleActionButton label="Sign in" onPress={handleSignIn} />
+        <CircleActionButton label="Sign in" onPress={dummyLogin} />
       </View>
     </AuthShell>
   );
