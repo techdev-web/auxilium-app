@@ -29,12 +29,17 @@ export default function AnnotationContent({
   children,
 }: Props) {
   const refresh = () => {
-    if (Platform.OS === 'android') {
-      // Defer so we don't fight an in-progress drag gesture / layout pass.
-      requestAnimationFrame(() => {
-        annotationRef?.current?.refresh();
-      });
+    if (Platform.OS !== 'android') {
+      return;
     }
+    // Defer so we don't fight an in-progress drag gesture / layout pass.
+    // A second tick covers cases where the first snapshot is still stale.
+    requestAnimationFrame(() => {
+      annotationRef?.current?.refresh();
+      setTimeout(() => {
+        annotationRef?.current?.refresh();
+      }, 48);
+    });
   };
 
   useEffect(() => {

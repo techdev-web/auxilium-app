@@ -401,3 +401,45 @@ export function insertGeometryVertex(
     coordinates: polygonCoordinatesFromVertices(next),
   };
 }
+
+/** Minimum editable vertices that must remain for each geometry kind. */
+export function minEditableVertexCount(kind: MapGeometry['kind']): number {
+  if (kind === 'Polygon') {
+    return 3;
+  }
+  if (kind === 'LineString') {
+    return 2;
+  }
+  return 1;
+}
+
+export function deleteGeometryVertex(
+  geometry: MapGeometry,
+  vertexIndex: number,
+): MapGeometry | null {
+  if (geometry.kind === 'Point') {
+    return null;
+  }
+
+  const vertices = getEditableVertices(geometry);
+  if (vertexIndex < 0 || vertexIndex >= vertices.length) {
+    return geometry;
+  }
+  if (vertices.length <= minEditableVertexCount(geometry.kind)) {
+    return null;
+  }
+
+  const next = vertices.filter((_, i) => i !== vertexIndex);
+
+  if (geometry.kind === 'LineString') {
+    return {
+      ...geometry,
+      coordinates: lineCoordinatesFromVertices(next),
+    };
+  }
+
+  return {
+    ...geometry,
+    coordinates: polygonCoordinatesFromVertices(next),
+  };
+}

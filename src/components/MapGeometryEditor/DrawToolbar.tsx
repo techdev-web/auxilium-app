@@ -11,6 +11,7 @@ import {
   Layers,
   MapPin,
   Slash,
+  Trash2,
   Undo2,
 } from 'lucide-react-native';
 import type { MapGeometryKind } from '../../types/mapGeometry';
@@ -28,6 +29,10 @@ type Props = {
   onOpenCsvImport: () => void;
   onAddImageOverlay?: () => void;
   onOpenFeatureList?: () => void;
+  /** 0-based index when a line/polygon vertex is selected for editing. */
+  selectedVertexIndex?: number | null;
+  canDeleteVertex?: boolean;
+  onDeleteVertex?: () => void;
 };
 
 const MODES: {
@@ -52,6 +57,9 @@ export default function DrawToolbar({
   onOpenCsvImport,
   onAddImageOverlay,
   onOpenFeatureList,
+  selectedVertexIndex = null,
+  canDeleteVertex = false,
+  onDeleteVertex,
 }: Props) {
   const { theme } = useUnistyles();
   const canFinish =
@@ -59,6 +67,8 @@ export default function DrawToolbar({
     (mode === 'Polygon' && draftVertexCount >= 3);
   const showDraftActions =
     editable && (mode === 'LineString' || mode === 'Polygon');
+  const showVertexActions =
+    editable && selectedVertexIndex != null && onDeleteVertex != null;
   const accent = theme.colors.secondary;
 
   return (
@@ -144,43 +154,75 @@ export default function DrawToolbar({
         </ScrollView>
       ) : null}
 
-      {showDraftActions ? (
+      {showDraftActions || showVertexActions ? (
         <View style={styles.draftBar}>
           <View style={styles.draftMeta}>
-            <Text style={styles.draftCount}>
-              {draftVertexCount} vertex{draftVertexCount === 1 ? '' : 'es'}
-            </Text>
-            <Text style={styles.draftHint}>
-              {mode === 'Polygon'
-                ? 'Tap map · 3+ to finish'
-                : 'Tap map · 2+ to finish'}
-            </Text>
+            {showVertexActions ? (
+              <>
+                <Text style={styles.draftCount}>
+                  Point {(selectedVertexIndex ?? 0) + 1} selected
+                </Text>
+                <Text style={styles.draftHint}>
+                  Tap map to add · drag to move
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.draftCount}>
+                  {draftVertexCount} vertex
+                  {draftVertexCount === 1 ? '' : 'es'}
+                </Text>
+                <Text style={styles.draftHint}>
+                  {mode === 'Polygon'
+                    ? 'Tap map · 3+ to finish'
+                    : 'Tap map · 2+ to finish'}
+                </Text>
+              </>
+            )}
           </View>
           <View style={styles.draftActions}>
-            <Pressable
-              onPress={onUndoVertex}
-              disabled={draftVertexCount === 0}
-              style={[
-                styles.draftChip,
-                draftVertexCount === 0 && styles.disabled,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Undo last vertex">
-              <Undo2 size={13} color={theme.colors.text} />
-              <Text style={styles.draftChipText}>Undo</Text>
-            </Pressable>
-            <Pressable
-              onPress={onFinishShape}
-              disabled={!canFinish}
-              style={[
-                styles.finishChip,
-                !canFinish && styles.disabled,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Finish shape">
-              <Check size={13} color={theme.colors.onSecondary} />
-              <Text style={styles.finishText}>Finish</Text>
-            </Pressable>
+            {showDraftActions ? (
+              <>
+                <Pressable
+                  onPress={onUndoVertex}
+                  disabled={draftVertexCount === 0}
+                  style={[
+                    styles.draftChip,
+                    draftVertexCount === 0 && styles.disabled,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Undo last vertex">
+                  <Undo2 size={13} color={theme.colors.text} />
+                  <Text style={styles.draftChipText}>Undo</Text>
+                </Pressable>
+                <Pressable
+                  onPress={onFinishShape}
+                  disabled={!canFinish}
+                  style={[
+                    styles.finishChip,
+                    !canFinish && styles.disabled,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Finish shape">
+                  <Check size={13} color={theme.colors.onSecondary} />
+                  <Text style={styles.finishText}>Finish</Text>
+                </Pressable>
+              </>
+            ) : null}
+            {showVertexActions ? (
+              <Pressable
+                onPress={onDeleteVertex}
+                disabled={!canDeleteVertex}
+                style={[
+                  styles.deleteChip,
+                  !canDeleteVertex && styles.disabled,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Delete selected point">
+                <Trash2 size={13} color="#C62828" />
+                <Text style={styles.deleteChipText}>Delete</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       ) : null}
@@ -316,6 +358,22 @@ const styles = StyleSheet.create(theme => ({
     fontSize: 11,
     fontWeight: '700',
     color: theme.colors.onSecondary,
+  },
+  deleteChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: theme.gap(1),
+    paddingVertical: theme.gap(0.5),
+    borderRadius: 8,
+    backgroundColor: '#FFEBEE',
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
+  deleteChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C62828',
   },
   disabled: {
     opacity: 0.4,

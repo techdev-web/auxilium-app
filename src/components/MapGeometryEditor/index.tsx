@@ -23,7 +23,10 @@ import {
   lineCoordinatesFromVertices,
   pointCoordinatesFromLngLat,
   polygonCoordinatesFromVertices,
+  deleteGeometryVertex,
+  getEditableVertices,
   insertGeometryVertex,
+  minEditableVertexCount,
   updateGeometryVertex,
 } from '../../utils/mapGeometryLayers';
 import CoordinateEntrySheet from './CoordinateEntrySheet';
@@ -87,6 +90,9 @@ export default function MapGeometryEditor({
 }: MapGeometryEditorProps) {
   const [mode, setMode] = useState<DrawMode>('select');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedVertexIndex, setSelectedVertexIndex] = useState<number | null>(
+    null,
+  );
   const [draftVertices, setDraftVertices] = useState<Position[]>([]);
   const [coordsVisible, setCoordsVisible] = useState(false);
   const [uploadCsvVisible, setUploadCsvVisible] = useState(false);
@@ -251,7 +257,45 @@ export default function MapGeometryEditor({
       return;
     }
     if (mode === 'select') {
+      const selectedGeom =
+        selectedId != null
+          ? geometries.find(g => g.id === selectedId)
+          : undefined;
+      if (
+        selectedGeom &&
+        (selectedGeom.kind === 'LineString' ||
+          selectedGeom.kind === 'Polygon') &&
+        selectedVertexIndex != null
+      ) {
+        const vertices = getEditableVertices(selectedGeom);
+        if (
+          selectedVertexIndex < 0 ||
+          selectedVertexIndex >= vertices.length
+        ) {
+          setSelectedVertexIndex(null);
+          return;
+        }
+
+        // Lines: tap with the start selected prepends (extend before start).
+        // Otherwise insert after the selected vertex (between it and the next,
+        // or after the end when the last vertex is selected).
+        const insertAt =
+          selectedGeom.kind === 'LineString' && selectedVertexIndex === 0
+            ? 0
+            : selectedVertexIndex + 1;
+        const updated = insertGeometryVertex(
+          selectedGeom,
+          insertAt,
+          longitude,
+          latitude,
+        );
+        upsertGeometry(updated);
+        setSelectedVertexIndex(insertAt);
+        setInspectorMinimized(false);
+        return;
+      }
       setSelectedId(null);
+      setSelectedVertexIndex(null);
       return;
     }
     if (mode === 'Point') {
@@ -261,6 +305,7 @@ export default function MapGeometryEditor({
     if (mode === 'LineString' || mode === 'Polygon') {
       setDraftVertices(prev => [...prev, [longitude, latitude]]);
       setSelectedId(null);
+      setSelectedVertexIndex(null);
     }
   };
 
@@ -268,6 +313,7 @@ export default function MapGeometryEditor({
     if (draftVertices.length > 0 && next !== mode) {
       setDraftVertices([]);
     }
+    setSelectedVertexIndex(null);
     setMode(next);
     if (next !== 'select') {
       setSelectedId(null);
@@ -388,6 +434,7 @@ export default function MapGeometryEditor({
       setOverlays(overlays.filter(o => o.id !== id));
       if (selectedId === id) {
         setSelectedId(null);
+        setSelectedVertexIndex(null);
       }
       return;
     }
@@ -401,6 +448,7 @@ export default function MapGeometryEditor({
     }
     if (selectedId === id) {
       setSelectedId(null);
+      setSelectedVertexIndex(null);
     }
   };
 
@@ -439,6 +487,7 @@ export default function MapGeometryEditor({
       upsertOverlay({ ...overlay, visible: true });
     }
     setSelectedId(id);
+    setSelectedVertexIndex(null);
     setMode('select');
     setDraftVertices([]);
     setInspectorMinimized(false);
@@ -487,10 +536,60 @@ export default function MapGeometryEditor({
       latitude,
     );
     upsertGeometry(updated);
+    setSelectedVertexIndex(insertAtIndex);
     setInspectorMinimized(false);
     setSelectedId(geometryId);
     setMode('select');
   };
+
+  const handleDeleteVertex = () => {
+    if (!editable || selectedId == null || selectedVertexIndex == null) {
+      return;
+    }
+    const target = geometries.find(g => g.id === selectedId);
+    if (
+      !target ||
+      (target.kind !== 'LineString' && target.kind !== 'Polygon')
+    ) {
+      return;
+    }
+    const updated = deleteGeometryVertex(target, selectedVertexIndex);
+    if (!updated) {
+      Toast.show({
+        type: 'info',
+        text1: 'Cannot delete point',
+        text2:
+          target.kind === 'Polygon'
+            ? 'Polygons need at least 3 points'
+            : 'Lines need at least 2 points',
+      });
+      return;
+    }
+    upsertGeometry(updated);
+    const nextCount = getEditableVertices(updated).length;
+    setSelectedVertexIndex(
+      nextCount === 0
+        ? null
+        : Math.min(selectedVertexIndex, nextCount - 1),
+    );
+  };
+
+  const canDeleteSelectedVertex = useMemo(() => {
+    if (selectedId == null || selectedVertexIndex == null) {
+      return false;
+    }
+    const target = geometries.find(g => g.id === selectedId);
+    if (
+      !target ||
+      (target.kind !== 'LineString' && target.kind !== 'Polygon')
+    ) {
+      return false;
+    }
+    return (
+      getEditableVertices(target).length >
+      minEditableVertexCount(target.kind)
+    );
+  }, [geometries, selectedId, selectedVertexIndex]);
 
   const handleMoveDraftVertex = (
     vertexIndex: number,
@@ -576,6 +675,9 @@ export default function MapGeometryEditor({
         onOpenCsvImport={() => setUploadCsvVisible(true)}
         onAddImageOverlay={handleAddImageOverlay}
         onOpenFeatureList={() => setFeatureListVisible(true)}
+        selectedVertexIndex={selectedVertexIndex}
+        canDeleteVertex={canDeleteSelectedVertex}
+        onDeleteVertex={handleDeleteVertex}
       />
 
       <View style={styles.mapStage}>
@@ -583,6 +685,7 @@ export default function MapGeometryEditor({
           geometries={geometries}
           imageOverlays={overlays}
           selectedId={selectedId}
+          selectedVertexIndex={selectedVertexIndex}
           mode={mode}
           draftVertices={draftVertices}
           initialLatitude={initialCamera?.latitude}
@@ -592,11 +695,17 @@ export default function MapGeometryEditor({
           onMapPress={handleMapPress}
           onSelectFeature={id => {
             setInspectorMinimized(false);
+            if (id !== selectedId) {
+              setSelectedVertexIndex(null);
+            }
             setSelectedId(id);
             if (id) {
               setMode('select');
               setDraftVertices([]);
             }
+          }}
+          onSelectVertex={index => {
+            setSelectedVertexIndex(index);
           }}
           onMoveVertex={handleMoveVertex}
           onInsertVertex={handleInsertVertex}
@@ -630,7 +739,10 @@ export default function MapGeometryEditor({
             editable={editable}
             onChange={next => upsertFeature(next)}
             onDelete={handleDelete}
-            onClose={() => setSelectedId(null)}
+            onClose={() => {
+              setSelectedId(null);
+              setSelectedVertexIndex(null);
+            }}
             bottomInset={shouldShowSave && editable ? 0 : undefined}
             initialMinimized={inspectorMinimized}
           />

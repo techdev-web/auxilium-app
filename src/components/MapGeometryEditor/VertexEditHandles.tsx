@@ -4,18 +4,26 @@ import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import {
   ViewAnnotation,
   type ViewAnnotationEvent,
+  type ViewAnnotationRef,
 } from '@maplibre/maplibre-react-native';
 import {
   getEditableVertices,
   getMidpointHandles,
 } from '../../utils/mapGeometryLayers';
 import type { MapGeometry } from '../../types/mapGeometry';
+import AnnotationContent from './AnnotationContent';
 
 const HANDLE_SIZE = 44;
+/** Ignore sub-pixel drag noise so a tap still counts as a press. */
+const TAP_MOVE_THRESHOLD_DEG = 0.00005;
 
 type Props = {
   geometry: MapGeometry;
   editable?: boolean;
+  /** When false, only vertex handles are shown (useful while drawing a draft). */
+  showMidpoints?: boolean;
+  selectedVertexIndex?: number | null;
+  onSelectVertex?: (vertexIndex: number | null) => void;
   onMoveVertex: (
     geometryId: string,
     vertexIndex: number,
@@ -32,14 +40,15 @@ type Props = {
 
 /**
  * Vertex + midpoint handles for a selected line/polygon.
- * Long-press a vertex to drag it. Tap or long-press-drag a midpoint to insert a vertex.
- *
- * Coordinates are only committed on drag end: MapLibre repositions the native
- * annotation whenever `lngLat` changes, so updating it mid-gesture cancels the drag.
+ * Tap a vertex to select it. Drag a selected vertex to move it.
+ * Tap or drag a midpoint to insert a vertex.
  */
 export default function VertexEditHandles({
   geometry,
   editable = true,
+  showMidpoints = true,
+  selectedVertexIndex = null,
+  onSelectVertex,
   onMoveVertex,
   onInsertVertex,
 }: Props) {
@@ -50,30 +59,51 @@ export default function VertexEditHandles({
   }
 
   const vertices = getEditableVertices(geometry);
-  const midpoints = getMidpointHandles(geometry);
+  const midpoints = showMidpoints ? getMidpointHandles(geometry) : [];
 
   return (
     <>
-      {vertices.map((vertex, index) => (
-        <DraggableHandle
-          key={`vertex-${geometry.id}-${index}`}
-          id={`vertex-${geometry.id}-${index}`}
-          longitude={vertex[0]}
-          latitude={vertex[1]}
-          onDragEnd={(longitude, latitude) =>
-            onMoveVertex(geometry.id, index, longitude, latitude)
-          }>
-          <View
-            style={[
-              styles.vertexHandle,
-              {
-                backgroundColor: geometry.color,
-                borderColor: theme.colors.background,
-              },
-            ]}
-          />
-        </DraggableHandle>
-      ))}
+      {vertices.map((vertex, index) => {
+        const selected = selectedVertexIndex === index;
+        return (
+          <DraggableHandle
+            key={`vertex-${geometry.id}-${index}`}
+            id={`vertex-${geometry.id}-${index}`}
+            longitude={vertex[0]}
+            latitude={vertex[1]}
+            refreshKey={`${geometry.id}:${index}:${selected ? 1 : 0}`}
+            onPress={() => onSelectVertex?.(index)}
+            onDragEnd={(longitude, latitude) => {
+              onSelectVertex?.(index);
+              onMoveVertex(geometry.id, index, longitude, latitude);
+            }}>
+            <View style={styles.vertexVisual} pointerEvents="none">
+              {/* Always mounted so Android bitmap layout stays stable. */}
+              <View
+                style={[
+                  styles.vertexRing,
+                  {
+                    opacity: selected ? 1 : 0,
+                    borderColor: theme.colors.secondary,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  styles.vertexHandle,
+                  {
+                    backgroundColor: geometry.color,
+                    borderColor: selected
+                      ? theme.colors.secondary
+                      : theme.colors.background,
+                    borderWidth: selected ? 3 : 2.5,
+                  },
+                ]}
+              />
+            </View>
+          </DraggableHandle>
+        );
+      })}
 
       {midpoints.map(mid => (
         <DraggableHandle
@@ -105,6 +135,7 @@ export default function VertexEditHandles({
                 backgroundColor: theme.colors.background,
               },
             ]}
+            pointerEvents="none"
           />
         </DraggableHandle>
       ))}
@@ -116,6 +147,7 @@ type DraggableHandleProps = {
   id: string;
   longitude: number;
   latitude: number;
+  refreshKey?: string | number | boolean | null;
   onPress?: () => void;
   onDragEnd: (longitude: number, latitude: number) => void;
   children: ReactElement;
@@ -125,16 +157,23 @@ type DraggableHandleProps = {
  * Keeps `lngLat` stable while a drag is in progress. Parent re-renders (zoom,
  * selection UI, etc.) otherwise push a fresh coordinate array into the native
  * annotation and MapLibre snaps it back to the pre-drag position.
+ *
+ * Tiny movements are treated as taps so selection stays reliable on draggable
+ * annotations where native onPress is intermittent.
  */
 function DraggableHandle({
   id,
   longitude,
   latitude,
+  refreshKey,
   onPress,
   onDragEnd,
   children,
 }: DraggableHandleProps) {
   const draggingRef = useRef(false);
+  const dragStartRef = useRef<[number, number] | null>(null);
+  const pressHandledInDragRef = useRef(false);
+  const annotationRef = useRef<ViewAnnotationRef>(null);
   const [lngLat, setLngLat] = useState<[number, number]>([
     longitude,
     latitude,
@@ -149,6 +188,7 @@ function DraggableHandle({
 
   return (
     <ViewAnnotation
+      ref={annotationRef}
       id={id}
       lngLat={lngLat}
       anchor="center"
@@ -156,20 +196,49 @@ function DraggableHandle({
       style={styles.annotation}
       onPress={event => {
         event.stopPropagation();
+        if (pressHandledInDragRef.current) {
+          pressHandledInDragRef.current = false;
+          return;
+        }
         onPress?.();
       }}
       onDragStart={() => {
         draggingRef.current = true;
+        pressHandledInDragRef.current = false;
+        dragStartRef.current = lngLat;
       }}
       onDragEnd={(event: NativeSyntheticEvent<ViewAnnotationEvent>) => {
         const [lng, lat] = event.nativeEvent.lngLat;
+        const start = dragStartRef.current;
         draggingRef.current = false;
+        dragStartRef.current = null;
+
+        const moved =
+          start != null &&
+          Math.hypot(lng - start[0], lat - start[1]) > TAP_MOVE_THRESHOLD_DEG;
+
+        if (!moved) {
+          // Snap back and treat as a tap — native onPress often does not fire
+          // after a micro-drag on ViewAnnotation.
+          if (start) {
+            setLngLat(start);
+          }
+          pressHandledInDragRef.current = true;
+          onPress?.();
+          return;
+        }
+
         setLngLat([lng, lat]);
         onDragEnd(lng, lat);
       }}>
-      <View collapsable={false} style={styles.hitArea}>
+      <AnnotationContent
+        key={String(refreshKey ?? id)}
+        width={HANDLE_SIZE}
+        height={HANDLE_SIZE}
+        annotationRef={annotationRef}
+        refreshKey={refreshKey ?? id}>
         {children}
-      </View>
+      </AnnotationContent>
     </ViewAnnotation>
   );
 }
@@ -179,25 +248,31 @@ const styles = StyleSheet.create(_theme => ({
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
   },
-  /** Annotation hit testing uses the rendered view bounds, so keep it thumb-sized. */
-  hitArea: {
+  vertexVisual: {
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'visible',
+  },
+  /** Soft outer ring — same footprint whether selected or not. */
+  vertexRing: {
+    position: 'absolute',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
   },
   vertexHandle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 3,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
   },
   midpointHandle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2.5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
     opacity: 0.9,
   },
 }));

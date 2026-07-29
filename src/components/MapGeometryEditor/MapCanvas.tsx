@@ -15,6 +15,7 @@ import {
   ViewAnnotation,
   type CameraRef,
   type PressEvent,
+  type PressEventWithFeatures,
   type ViewAnnotationEvent,
   type ViewAnnotationRef,
   type ViewStateChangeEvent,
@@ -82,8 +83,10 @@ type Props = {
   initialLongitude?: number;
   initialZoom?: number;
   editable?: boolean;
+  selectedVertexIndex?: number | null;
   onMapPress: (longitude: number, latitude: number) => void;
   onSelectFeature: (id: string | null) => void;
+  onSelectVertex?: (vertexIndex: number | null) => void;
   onMoveVertex: (
     geometryId: string,
     vertexIndex: number,
@@ -121,8 +124,10 @@ export default function MapCanvas({
   initialLongitude,
   initialZoom,
   editable = true,
+  selectedVertexIndex = null,
   onMapPress,
   onSelectFeature,
+  onSelectVertex,
   onMoveVertex,
   onInsertVertex,
   onMoveDraftVertex,
@@ -260,6 +265,32 @@ export default function MapCanvas({
   const handleMapPress = (event: NativeSyntheticEvent<PressEvent>) => {
     const [longitude, latitude] = event.nativeEvent.lngLat;
     onMapPress(longitude, latitude);
+  };
+
+  /** When a vertex is selected, taps on the shape should insert — not re-select. */
+  const handleGeometryPress = (
+    event: NativeSyntheticEvent<PressEventWithFeatures>,
+    geometryId: string,
+  ) => {
+    if (!canSelectFeatures || selectedOverlay) {
+      return;
+    }
+    event.stopPropagation();
+    const [longitude, latitude] = event.nativeEvent.lngLat;
+
+    if (
+      editable &&
+      selectedVertexIndex != null &&
+      selectedId === geometryId
+    ) {
+      onMapPress(longitude, latitude);
+      return;
+    }
+
+    const id = event.nativeEvent.features[0]?.properties?.id;
+    if (typeof id === 'string') {
+      onSelectFeature(id);
+    }
   };
 
   const handleRegionDidChange = (
@@ -403,14 +434,7 @@ export default function MapCanvas({
                   id={`geom-source-${geometry.id}`}
                   data={collection}
                   onPress={event => {
-                    if (!canSelectFeatures || selectedOverlay) {
-                      return;
-                    }
-                    event.stopPropagation();
-                    const id = event.nativeEvent.features[0]?.properties?.id;
-                    if (typeof id === 'string') {
-                      onSelectFeature(id);
-                    }
+                    handleGeometryPress(event, geometry.id);
                   }}>
                   <Layer
                     id={`geom-fill-${geometry.id}`}
@@ -443,15 +467,10 @@ export default function MapCanvas({
                 key={`stack-geom-${geometry.id}`}
                 id={`geom-source-${geometry.id}`}
                 data={collection}
+                // Wider hit area — thin lines are otherwise hard to tap.
+                hitbox={{ top: 28, right: 28, bottom: 28, left: 28 }}
                 onPress={event => {
-                  if (!canSelectFeatures || selectedOverlay) {
-                    return;
-                  }
-                  event.stopPropagation();
-                  const id = event.nativeEvent.features[0]?.properties?.id;
-                  if (typeof id === 'string') {
-                    onSelectFeature(id);
-                  }
+                  handleGeometryPress(event, geometry.id);
                 }}>
                 <Layer
                   id={`geom-line-${geometry.id}`}
@@ -571,6 +590,8 @@ export default function MapCanvas({
           <VertexEditHandles
             geometry={selectedGeometry}
             editable={editable}
+            selectedVertexIndex={selectedVertexIndex}
+            onSelectVertex={onSelectVertex}
             onMoveVertex={onMoveVertex}
             onInsertVertex={onInsertVertex}
           />
@@ -580,6 +601,7 @@ export default function MapCanvas({
           <VertexEditHandles
             geometry={draftGeometry}
             editable={editable}
+            showMidpoints={false}
             onMoveVertex={(_id, vertexIndex, longitude, latitude) =>
               onMoveDraftVertex(vertexIndex, longitude, latitude)
             }

@@ -175,10 +175,12 @@ function GeometryInspectorBody({
   setFeatureType: (ft: MapFeatureType) => void;
 }) {
   const { theme } = useUnistyles();
+  const isPolyShape =
+    feature.kind === 'LineString' || feature.kind === 'Polygon';
 
   return (
     <>
-      {editable && feature.kind !== 'Point' ? (
+      {editable && isPolyShape ? (
         <Text style={styles.gestureHint}>
           Long-press a filled handle to drag it. Tap a hollow handle to
           add a vertex on that edge.
